@@ -1,0 +1,152 @@
+#!/usr/local/bin/python3
+
+import subprocess
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+import asana
+import json
+from six import print_
+
+# Constants
+PREF_FILE_PATH = '.fd/asana_info.json'
+ASANA_TASK_ID_REGEX = 'Asana Task ID: #[0-9]\{5,\}'
+
+# Settings
+DEFAULTS = {
+    'DISPLAY_TASK_LIMIT': 10,
+    'TEMPLATE_FILE_NAME': '.fd/ci_msg_template',
+    'ASANA_TOKEN_ENVIR_NAME': 'ASANA_TOKEN',
+    'ASANA_PROJECT_ID': None,
+    'ASANA_WORKSPACE_ID': None,
+    'QUERY_BY_PROJECT': False,
+}
+
+# Factories
+def errorListDump(err_msg = "Unknown Error!", info_list = sys.argv):
+    print_(err_msg, file=sys.stderr)
+    print_("Info: sys.argv", len(info_list), file=sys.stderr)
+    for item in info_list:
+        print_(item, file=sys.stderr)
+    sys.exit(1)
+
+_repo_dir_path = None
+def getRepoDirPath():
+    global _repo_dir_path
+    if _repo_dir_path is None:
+        _repo_dir_path = subprocess.run(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE).stdout.decode('utf-8').rstrip()
+    return _repo_dir_path
+
+_commit_msg_path = None
+def getCommitMsgPath():
+    global _commit_msg_path
+    if _commit_msg_path == None:
+        _commit_msg_path = getRepoDirPath() + '/' + sys.argv[1]
+    return _commit_msg_path
+
+_commit_template_path = None
+def getCommitTemplatePath():
+    global _commit_template_path
+    if _commit_template_path is None:
+        _commit_template_path = getRepoDirPath() + '/' + DEFAULTS['TEMPLATE_FILE_NAME']
+    return _commit_template_path
+
+def readAndSetPref(file_path):
+    # Either Project ID or Workspace ID must be given
+    proj_pref_exist = False
+    ws_pref_exist = False
+    pref_file_path = getRepoDirPath() + '/' + file_path
+    with open(pref_file_path, 'r') as pref_f:
+        pref_dict = json.load(pref_f)
+        for k,v in DEFAULTS.items():
+            if k in pref_dict:
+                if k == 'ASANA_PROJECT_ID':
+                    proj_pref_exist = True
+                if k == 'ASANA_WORKSPACE_ID':
+                    ws_pref_exist = True
+                DEFAULTS[k] = pref_dict[k]
+    if not proj_pref_exist and not ws_pref_exist:
+        errorListDump("Please provide either 'ASANA_PROJECT_ID' or 'ASANA_WORKSPACE_ID' in <repo_base>/.fd/asana_pref.json")
+        sys.exit(1)
+
+# Read pref file and override DEFAULTS settings
+readAndSetPref(PREF_FILE_PATH)
+
+
+# Main function START HERE
+if len(sys.argv) < 2:
+    errorListDump()
+
+if len(sys.argv) > 2:
+    if sys.argv[2] == 'message':
+        # git commit -m <message>
+        pass
+    elif sys.argv[2] == 'commit':
+        # git commit --amend
+        # comment the Asana task ID info in commit msg by add a hashtag before it
+        subprocess.run(['sed', '-i', '-e', 's/^\('+ASANA_TASK_ID_REGEX+'\)/# \\1/g', getCommitMsgPath()])
+        sys.exit(0)
+    else:
+        errorListDump()
+
+if DEFAULTS['ASANA_TOKEN_ENVIR_NAME'] not in os.environ:
+    print_("Missing environment variable $<ASANA_TOKEN_ENVIR_NAME>", file=sys.stderr)
+    sys.exit(1)
+
+# create a client with a Personal Access Token
+client = asana.Client.access_token(os.environ[DEFAULTS['ASANA_TOKEN_ENVIR_NAME']])
+
+param = {}
+if DEFAULTS["ASANA_PROJECT_ID"] is not None:
+    param = {'completed_since': 'now', 'project': DEFAULTS['ASANA_PROJECT_ID']}
+elif DEFAULTS["ASANA_WORKSPACE_ID"] is not None:
+    param = {'completed_since': 'now', 'workspace': DEFAULTS['ASANA_WORKSPACE_ID'], 'assignee': 'me'}
+else:
+    errorListDump("Please provide either 'ASANA_PROJECT_ID' or 'ASANA_WORKSPACE_ID' in <repo_base>/.fd/asana_pref.json")
+    sys.exit(1)
+
+fields = ['followers', 'created_at', 'assignee', 'name']
+# tasks = client.tasks.find_by_project(DEFAULTS['ASANA_PROJECT_ID'], param, fields=fields, limit=DEFAULTS['DISPLAY_TASK_LIMIT'])
+tasks = client.tasks.find_all(param, fields=fields, limit=DEFAULTS['DISPLAY_TASK_LIMIT'])
+
+# print the latest DISPLAY_TASK_LIMIT uncompleted tasks
+i = 0
+sorted_tasks = sorted(tasks, key=lambda x:x['created_at'], reverse=True)
+print_("Link to the Asana Task:")
+task_list = []
+for task in sorted_tasks:
+    i += 1
+    task_list.append(task)
+    print_(i, '#', task['id'], '"' + task['name'] + '"')
+    if i == DEFAULTS['DISPLAY_TASK_LIMIT']:
+        break
+
+sys.stdin = open("/dev/tty", "r")
+selected_task_id = ''
+while type(selected_task_id) != int:
+    try:
+        selected_task_id = int(input("Enter the index 1-" + str(DEFAULTS['DISPLAY_TASK_LIMIT']) + " (ctrl-c to abort): "))
+        if selected_task_id <= 0 or selected_task_id > DEFAULTS['DISPLAY_TASK_LIMIT']:
+            print_("Please enter a number between 1-" + str(DEFAULTS['DISPLAY_TASK_LIMIT']))
+            selected_task_id = ''
+    except KeyboardInterrupt:
+        sys.exit(1)
+    except:
+        print_("Please enter a number between 1-" + str(DEFAULTS['DISPLAY_TASK_LIMIT']))
+
+
+# Prepare commit msg
+commit_msg = ''
+## 1. Load the commit tempalte
+with open(getCommitTemplatePath(), 'r') as f_template:
+    commit_msg += f_template.read()
+    # Remove the trailing space and newline
+    commit_msg = commit_msg.rstrip() + str(task_list[selected_task_id-1]['id']) + '\n'
+
+## 2. Load the commit info given by git
+with open(getCommitMsgPath(), 'r') as f_commit:
+    commit_msg += f_commit.read()
+
+## 3. Overwrite the commit msg destination file
+with open(getCommitMsgPath(), 'w') as f_commit:
+    f_commit.write(commit_msg)
