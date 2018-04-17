@@ -9,13 +9,13 @@ import json
 from six import print_
 
 # Constants
-PREF_FILE_PATH = '.fd/asana_info.json'
+PREF_FILE_PATH = 'pref/asana_info.json'
 ASANA_TASK_ID_REGEX = 'Asana Task ID: #[0-9]\{5,\}'
 
 # Settings
 DEFAULTS = {
     'DISPLAY_TASK_LIMIT': 10,
-    'TEMPLATE_FILE_NAME': '.fd/ci_msg_template',
+    'TEMPLATE_FILE_NAME': 'ci_msg_template',
     'ASANA_TOKEN_ENVIR_NAME': 'ASANA_TOKEN',
     'ASANA_PROJECT_ID': None,
     'ASANA_WORKSPACE_ID': None,
