@@ -111,7 +111,7 @@ client = asana.Client.access_token(os.environ[DEFAULTS['ASANA_TOKEN_ENVIR_NAME']
 
 param = {}
 if DEFAULTS["ASANA_PROJECT_ID"] is not None:
-    param = {'completed_since': 'now', 'project': DEFAULTS['ASANA_PROJECT_ID']}
+    param = {'completed_since': 'now', 'project': DEFAULTS['ASANA_PROJECT_ID'], 'assignee': 'me'}
 elif DEFAULTS["ASANA_WORKSPACE_ID"] is not None:
     param = {'completed_since': 'now', 'workspace': DEFAULTS['ASANA_WORKSPACE_ID'], 'assignee': 'me'}
 else:
