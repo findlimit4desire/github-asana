@@ -41,7 +41,7 @@ _module_root_path = None
 def getModuleRootPath():
     global _module_root_path
     if _module_root_path is None:
-        _module_root_path = os.path.abspath(os.path.dirname(__file__)).rstrip()
+        _module_root_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__))).rstrip()
     return _module_root_path
 
 _commit_msg_path = None
@@ -62,7 +62,7 @@ _pref_file_path = None
 def getPrefFilePath():
     global _pref_file_path
     if _pref_file_path is None:
-        _pref_file_path = getModuleRootPath() + '/../' + PREF_FILE_PATH
+        _pref_file_path = getModuleRootPath() + '/' + PREF_FILE_PATH
     return _pref_file_path
 
 def readAndSetPref():
