@@ -30,32 +30,46 @@ def errorListDump(err_msg = "Unknown Error!", info_list = sys.argv):
         print_(item, file=sys.stderr)
     sys.exit(1)
 
-_repo_dir_path = None
-def getRepoDirPath():
-    global _repo_dir_path
-    if _repo_dir_path is None:
-        _repo_dir_path = subprocess.run(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE).stdout.decode('utf-8').rstrip()
-    return _repo_dir_path
+_repo_root_path = None
+def getRepoRootPath():
+    global _repo_root_path
+    if _repo_root_path is None:
+        _repo_root_path = subprocess.run(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE).stdout.decode('utf-8').rstrip()
+    return _repo_root_path
+
+_module_root_path = None
+def getModuleRootPath():
+    global _module_root_path
+    if _module_root_path is None:
+        _module_root_path = os.path.abspath(os.path.dirname(__file__)).rstrip()
+    return _module_root_path
 
 _commit_msg_path = None
 def getCommitMsgPath():
     global _commit_msg_path
     if _commit_msg_path == None:
-        _commit_msg_path = getRepoDirPath() + '/' + sys.argv[1]
+        _commit_msg_path = getRepoRootPath() + '/' + sys.argv[1]
     return _commit_msg_path
 
 _commit_template_path = None
 def getCommitTemplatePath():
     global _commit_template_path
     if _commit_template_path is None:
-        _commit_template_path = getRepoDirPath() + '/' + DEFAULTS['TEMPLATE_FILE_NAME']
+        _commit_template_path = getModuleRootPath() + '/' + DEFAULTS['TEMPLATE_FILE_NAME']
     return _commit_template_path
 
-def readAndSetPref(file_path):
+_pref_file_path = None
+def getPrefFilePath():
+    global _pref_file_path
+    if _pref_file_path is None:
+        _pref_file_path = getModuleRootPath() + '/../' + PREF_FILE_PATH
+    return _pref_file_path
+
+def readAndSetPref():
     # Either Project ID or Workspace ID must be given
     proj_pref_exist = False
     ws_pref_exist = False
-    pref_file_path = getRepoDirPath() + '/' + file_path
+    pref_file_path = getPrefFilePath()
     with open(pref_file_path, 'r') as pref_f:
         pref_dict = json.load(pref_f)
         for k,v in DEFAULTS.items():
@@ -70,8 +84,7 @@ def readAndSetPref(file_path):
         sys.exit(1)
 
 # Read pref file and override DEFAULTS settings
-readAndSetPref(PREF_FILE_PATH)
-
+readAndSetPref()
 
 # Main function START HERE
 if len(sys.argv) < 2:
