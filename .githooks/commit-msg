@@ -27,6 +27,5 @@ else
         exit 1
     else
         sed -i -e 's/^# \(Asana Task ID: #[0-9]\{5,\}\)/\1/g' $1
-        echo >&2 Everything correct
     fi
 fi
