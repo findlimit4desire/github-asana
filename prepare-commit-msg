@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import subprocess
 import sys, os
@@ -9,7 +9,7 @@ import json
 from six import print_
 
 # Constants
-PREF_FILE_PATH = 'pref/asana_info.json'
+PREF_FILE_NAME = 'asana_info.json'
 ASANA_TASK_ID_REGEX = 'Asana Task ID: #[0-9]\{5,\}'
 
 # Settings
@@ -55,14 +55,14 @@ _commit_template_path = None
 def getCommitTemplatePath():
     global _commit_template_path
     if _commit_template_path is None:
-        _commit_template_path = getRepoRootPath() + '/' + DEFAULTS['TEMPLATE_FILE_NAME']
+        _commit_template_path = getModuleRootPath() + '/../' + DEFAULTS['TEMPLATE_FILE_NAME']
     return _commit_template_path
 
 _pref_file_path = None
 def getPrefFilePath():
     global _pref_file_path
     if _pref_file_path is None:
-        _pref_file_path = getModuleRootPath() + '/' + PREF_FILE_PATH
+        _pref_file_path = getModuleRootPath() + '/../' + PREF_FILE_NAME
     return _pref_file_path
 
 def readAndSetPref():
