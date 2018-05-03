@@ -1,0 +1,3 @@
+[submodule "modules/python-asana"]
+	path = modules/asana
+	url = https://github.com/Asana/python-asana.git

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 
 import subprocess
 import sys, os
@@ -41,7 +41,7 @@ _module_root_path = None
 def getModuleRootPath():
     global _module_root_path
     if _module_root_path is None:
-        _module_root_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__))).rstrip()
+        _module_root_path = os.path.abspath(os.path.dirname(__file__)).rstrip()
     return _module_root_path
 
 _commit_msg_path = None
@@ -55,7 +55,7 @@ _commit_template_path = None
 def getCommitTemplatePath():
     global _commit_template_path
     if _commit_template_path is None:
-        _commit_template_path = getModuleRootPath() + '/' + DEFAULTS['TEMPLATE_FILE_NAME']
+        _commit_template_path = getRepoRootPath() + '/' + DEFAULTS['TEMPLATE_FILE_NAME']
     return _commit_template_path
 
 _pref_file_path = None
